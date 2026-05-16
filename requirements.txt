@@ -1,3 +1,4 @@
+--index-url https://download.pytorch.org/whl/cpu
 fastapi
 uvicorn
 sqlalchemy
@@ -10,10 +11,12 @@ pydantic
 jinja2
 python-multipart
 scikit-learn
-torch --index-url https://download.pytorch.org/whl/cpu
-torchvision --index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
 numpy
 Pillow
 folium
 streamlit-folium
 streamlit
+httpx
+email-validator

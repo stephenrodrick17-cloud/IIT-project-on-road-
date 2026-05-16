@@ -1,3 +1,4 @@
+--index-url https://download.pytorch.org/whl/cpu
 fastapi
 uvicorn
 sqlalchemy
@@ -7,7 +8,15 @@ opencv-python-headless
 pandas
 requests
 pydantic
+jinja2
 python-multipart
 scikit-learn
+torch
+torchvision
 numpy
 Pillow
+folium
+streamlit-folium
+streamlit
+httpx
+email-validator
