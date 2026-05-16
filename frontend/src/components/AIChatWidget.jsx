@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Sparkles, RotateCcw, Maximize2, Minimize2, MessageSquare, Terminal, Cpu } from 'lucide-react';
+import { Bot, X, Send, Sparkles, RotateCcw, Maximize2, Minimize2, MessageSquare, Terminal, Cpu, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'react-toastify';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -11,8 +12,67 @@ const AIChatWidget = ({ analysisContext = null }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Speech Recognition Setup
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+        sendMessage(transcript);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast.error('Voice recognition failed');
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      if (!recognitionRef.current) {
+        toast.error('Voice recognition not supported in this browser');
+        return;
+      }
+      setInput('');
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
+
+  const speak = (text) => {
+    if (!isVoiceEnabled) return;
+    
+    // Clean text for better speech
+    const cleanText = text.replace(/[#*`]/g, '').replace(/\[.*?\]\(.*?\)/g, '');
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 1.1;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  };
 
   // Auto-open and explain when analysis completes
   useEffect(() => {
@@ -24,7 +84,7 @@ const AIChatWidget = ({ analysisContext = null }) => {
       
       const triggerExplanation = async () => {
         const text = analysisContext.detections 
-          ? 'Conduct a technical engineering deep-dive into these specific structural anomalies.' 
+          ? 'Conduct a technical engineering deep-dive into these structural anomalies. Specifically explain the Expenditure Analysis, Severity Mix, and Analysis Radar results.' 
           : 'Analyze these infrastructure trends and provide a strategic briefing.';
         
         const userMsg = { role: 'user', content: text, timestamp: new Date() };
@@ -48,6 +108,7 @@ const AIChatWidget = ({ analysisContext = null }) => {
           const data = await response.json();
           if (isMounted) {
             setMessages(prev => [...prev, { role: 'assistant', content: data.reply, timestamp: new Date() }]);
+            if (isVoiceEnabled) speak(data.reply);
           }
         } catch (error) {
           if (isMounted) {
@@ -74,13 +135,15 @@ const AIChatWidget = ({ analysisContext = null }) => {
   // Welcome message
   useEffect(() => {
     if (isOpen && messages.length === 0 && !analysisContext) {
+      const welcomeText = "### 🤖 Neural Interface Active\nGreetings. I am **RoadGuard AI**, your strategic infrastructure advisor. I have access to real-time YOLOv8 telemetry and geospatial data.\n\nHow can I assist your command today?";
       setMessages([{
         role: 'assistant',
-        content: "### 🤖 Neural Interface Active\nGreetings. I am **RoadGuard AI**, your strategic infrastructure advisor. I have access to real-time YOLOv8 telemetry and geospatial data.\n\nHow can I assist your command today?",
+        content: welcomeText,
         timestamp: new Date()
       }]);
+      if (isVoiceEnabled) speak(welcomeText);
     }
-  }, [isOpen, analysisContext]);
+  }, [isOpen, analysisContext, isVoiceEnabled]);
 
   useEffect(() => {
     scrollToBottom();
@@ -122,6 +185,8 @@ const AIChatWidget = ({ analysisContext = null }) => {
         content: data.reply,
         timestamp: new Date()
       }]);
+      
+      if (isVoiceEnabled) speak(data.reply);
 
       if (!isOpen) setHasNewMessage(true);
     } catch (err) {
@@ -188,6 +253,18 @@ const AIChatWidget = ({ analysisContext = null }) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                const newState = !isVoiceEnabled;
+                setIsVoiceEnabled(newState);
+                if (!newState) window.speechSynthesis.cancel();
+                toast.info(`AI Voice ${newState ? 'Enabled' : 'Disabled'}`);
+              }} 
+              className={`p-3 rounded-xl transition-all ${isVoiceEnabled ? 'bg-orange-500/20 text-orange-500' : 'hover:bg-white/5 text-slate-400'}`}
+              title={isVoiceEnabled ? "Disable AI Voice" : "Enable AI Voice"}
+            >
+              {isVoiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
             <button onClick={() => setIsExpanded(!isExpanded)} className="p-3 hover:bg-white/5 rounded-xl text-slate-400 transition-all">
               {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </button>
@@ -237,7 +314,7 @@ const AIChatWidget = ({ analysisContext = null }) => {
 
         {/* Footer */}
         <div className="p-6 bg-slate-900/30 border-t border-white/5 space-y-4">
-          {!loading && messages.length < 5 && (
+          {!loading && messages.length < 10 && (
             <div className="flex flex-wrap gap-2">
               {QUICK_PROMPTS.map((p, i) => (
                 <button 
@@ -250,22 +327,33 @@ const AIChatWidget = ({ analysisContext = null }) => {
               ))}
             </div>
           )}
-          <div className="relative group">
-            <textarea
+          
+          <div className="relative flex items-center gap-2">
+            <button 
+              onClick={toggleListening}
+              className={`p-4 rounded-2xl border transition-all ${
+                isListening 
+                  ? 'bg-rose-500 border-rose-400 text-white animate-pulse' 
+                  : 'bg-slate-800 border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+              }`}
+            >
+              {isListening ? <Mic size={20} /> : <MicOff size={20} />}
+            </button>
+            <input
               ref={inputRef}
+              type="text"
               value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
-              placeholder="Inquire about telemetry data..."
-              rows={1}
-              className="w-full bg-slate-800/50 border border-white/10 rounded-2xl px-6 py-4 pr-16 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500 transition-all resize-none max-h-32"
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder={isListening ? "Listening..." : "Inquire about telemetry data..."}
+              className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all"
             />
             <button
               onClick={() => sendMessage()}
-              disabled={!input.trim() || loading}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:grayscale transition-all"
+              disabled={loading || !input.trim()}
+              className="p-4 bg-orange-500 text-white rounded-2xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-500/20"
             >
-              <Send size={18} />
+              <Send size={20} />
             </button>
           </div>
         </div>

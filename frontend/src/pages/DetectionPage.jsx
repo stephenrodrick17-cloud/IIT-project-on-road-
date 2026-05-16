@@ -1,8 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis 
+} from 'recharts';
+import { 
   Upload, Camera, MapPin, AlertCircle, FileVideo, Play, Pause, 
   RefreshCw, BarChart3, LayoutGrid, Zap, Bot, Sparkles, Download,
-  Activity, Shield, Target, Cpu, Eye, Info, ChevronRight, Gauge
+  Activity, Shield, Target, Cpu, Eye, Info, ChevronRight, Gauge,
+  TrendingUp, PieChart as PieIcon, Crosshair
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import API from '../services/api';
@@ -225,6 +230,51 @@ const DetectionPage = () => {
       });
     }
   };
+
+  const getChartData = () => {
+    if (!result || !result.detections) return { costData: [], distributionData: [], radarData: [] };
+    
+    // Cost by damage type
+    const costByType = result.detections.reduce((acc, det) => {
+      const type = det.damage_type;
+      acc[type] = (acc[type] || 0) + (det.cost_estimation?.total_cost || 0);
+      return acc;
+    }, {});
+    
+    const costData = Object.keys(costByType).map(type => ({
+      name: type.replace('_', ' ').toUpperCase(),
+      value: costByType[type]
+    }));
+
+    // Severity distribution
+    const severityCount = result.detections.reduce((acc, det) => {
+      acc[det.severity] = (acc[det.severity] || 0) + 1;
+      return acc;
+    }, {});
+
+    const distributionData = Object.keys(severityCount).map(sev => ({
+      name: sev.toUpperCase(),
+      value: severityCount[sev]
+    }));
+
+    // Radar data (average metrics)
+    const avgConfidence = (result.summary.avg_confidence || 0.85) * 100;
+    const maxSeverity = result.detections.some(d => d.severity === 'severe') ? 100 : result.detections.some(d => d.severity === 'moderate') ? 60 : 30;
+    const costImpact = Math.min(100, (result.summary.total_estimated_cost / 50000) * 100);
+    
+    const radarData = [
+      { subject: 'Confidence', A: avgConfidence, fullMark: 100 },
+      { subject: 'Severity', A: maxSeverity, fullMark: 100 },
+      { subject: 'Cost Impact', A: costImpact, fullMark: 100 },
+      { subject: 'Density', A: Math.min(100, result.summary.total_damage_areas * 20), fullMark: 100 },
+      { subject: 'Structural Risk', A: (maxSeverity + costImpact) / 2, fullMark: 100 }
+    ];
+
+    return { costData, distributionData, radarData };
+  };
+
+  const { costData, distributionData, radarData } = getChartData();
+  const CHART_COLORS = ['#f97316', '#fbbf24', '#f59e0b', '#d97706', '#b45309'];
 
   const handleDownloadReport = () => {
     if (!result) return;
@@ -449,6 +499,88 @@ const DetectionPage = () => {
               Execute Structural Diagnostics
             </button>
           )}
+
+          {/* New Visualization Section - Moved from Sidebar to under Feed */}
+          {result && (
+            <div className="bg-slate-900 rounded-[2.5rem] p-8 border border-slate-800 shadow-2xl space-y-8 animate-in slide-in-from-bottom-8 duration-700">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20"><Activity size={20} className="text-white" /></div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">Structural Analysis Matrix</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                   <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black rounded-full border border-emerald-500/20 uppercase tracking-widest">Neural Link Sync</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* Expenditure Analysis */}
+                <div className="space-y-4 md:col-span-2 lg:col-span-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><TrendingUp size={12} className="text-orange-500" /> Expenditure Analysis</p>
+                  <div className="h-[250px] w-full bg-slate-950/50 rounded-3xl p-6 border border-slate-800">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={costData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="name" hide />
+                        <YAxis hide />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}
+                          itemStyle={{ color: '#f97316' }}
+                          formatter={(value) => `₹${value.toLocaleString()}`}
+                        />
+                        <Bar dataKey="value" fill="#f97316" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Severity Mix */}
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><PieIcon size={12} className="text-orange-500" /> Severity Mix</p>
+                  <div className="h-[250px] bg-slate-950/50 rounded-3xl border border-slate-800 flex items-center justify-center p-6">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={distributionData}
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {distributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '10px' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Analysis Radar */}
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Crosshair size={12} className="text-orange-500" /> Analysis Radar</p>
+                  <div className="h-[250px] bg-slate-950/50 rounded-3xl border border-slate-800 flex items-center justify-center p-6">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                        <PolarGrid stroke="#1e293b" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 8, fontWeight: 'bold' }} />
+                        <Radar
+                          name="Analysis"
+                          dataKey="A"
+                          stroke="#f97316"
+                          fill="#f97316"
+                          fillOpacity={0.6}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Intelligence Sidebar */}
@@ -530,7 +662,7 @@ const DetectionPage = () => {
 
                 <div className="space-y-4">
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Info size={12} className="text-orange-500" /> Objects Identified</p>
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+                  <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin">
                     {result.detections.map((det, i) => (
                       <div 
                         key={i} 
@@ -542,7 +674,10 @@ const DetectionPage = () => {
                           <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${det.severity === 'severe' ? 'bg-rose-500/20 text-rose-500' : det.severity === 'moderate' ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'}`}>{det.severity}</span>
                           <span className="text-[10px] font-mono text-slate-500">{(det.confidence * 100).toFixed(1)}%</span>
                         </div>
-                        <p className="text-sm font-black text-white uppercase tracking-tight">{det.damage_type}</p>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm font-black text-white uppercase tracking-tight">{det.damage_type}</p>
+                          <p className="text-xs font-black text-orange-500">₹{det.cost_estimation?.total_cost.toLocaleString()}</p>
+                        </div>
                         <div className="mt-3 h-1 bg-slate-900 rounded-full overflow-hidden">
                           <div className={`h-full transition-all duration-1000 ${det.severity === 'severe' ? 'bg-rose-500' : det.severity === 'moderate' ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${det.confidence * 100}%` }} />
                         </div>

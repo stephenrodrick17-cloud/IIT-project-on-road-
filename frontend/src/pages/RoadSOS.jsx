@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Phone, MapPin, Activity, Shield, Navigation, ChevronRight, Zap, Target, Radio } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Phone, MapPin, Activity, Shield, Navigation, ChevronRight, Zap, Target, Radio, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -44,7 +44,67 @@ const RoadSOS = () => {
     { id: 2, type: 'ambulance', name: 'MED-12', pos: [0, 0], status: 'RESPONDING' }
   ]);
   const [loading, setLoading] = useState(false);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
   const TOMTOM_KEY = process.env.REACT_APP_TOMTOM_KEY;
+
+  // AI Voice Setup
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+        if (transcript.includes('emergency') || transcript.includes('help') || transcript.includes('sos')) {
+          handleSOS();
+          speak("Emergency signal received. Broadcasting SOS coordinates to satellite network.");
+        } else if (transcript.includes('status') || transcript.includes('units')) {
+          announceStatus();
+        }
+      };
+
+      recognitionRef.current.onerror = () => setIsListening(false);
+      recognitionRef.current.onend = () => setIsListening(false);
+    }
+  }, []);
+
+  const speak = (text) => {
+    if (!isVoiceEnabled) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const announceStatus = () => {
+    const unitCount = activeUnits.length;
+    const statusText = `Satellite tracking confirmed. ${unitCount} emergency units are en-route to your sector. PATROL 704 and MED 12 are responding.`;
+    speak(statusText);
+    toast.info("AI Status Briefing Active");
+  };
+
+  const toggleVoice = () => {
+    const newState = !isVoiceEnabled;
+    setIsVoiceEnabled(newState);
+    if (newState) {
+      speak("Emergency Voice Interface Activated. Say 'Emergency' or 'Help' to broadcast SOS.");
+      if (recognitionRef.current) {
+        recognitionRef.current.start();
+        setIsListening(true);
+      }
+    } else {
+      window.speechSynthesis.cancel();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+      }
+    }
+  };
 
   const fetchNearbyServices = useCallback(async (loc) => {
     if (!TOMTOM_KEY) {
@@ -140,6 +200,25 @@ const RoadSOS = () => {
             </div>
             <h1 className="text-7xl font-black text-white tracking-tighter mb-4 leading-none">ROAD <span className="text-rose-500">SOS</span></h1>
             <p className="text-slate-400 text-2xl font-medium leading-relaxed">Pioneering real-time emergency telemetry. Satellite-tracked patrol and medical units responding to your sector.</p>
+            
+            <div className="mt-10 flex flex-wrap gap-4">
+               <button 
+                  onClick={toggleVoice}
+                  className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center gap-3 transition-all ${isVoiceEnabled ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+               >
+                  {isVoiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                  {isVoiceEnabled ? 'AI Voice Active' : 'Enable Voice Interface'}
+               </button>
+               {isVoiceEnabled && (
+                  <div className="flex items-center gap-3 px-6 py-4 bg-slate-900/50 rounded-2xl border border-rose-500/20">
+                     <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}`} />
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {isListening ? 'Listening for "Emergency"...' : 'Mic Standby'}
+                     </span>
+                     {isListening ? <Mic size={14} className="text-emerald-500" /> : <MicOff size={14} className="text-slate-600" />}
+                  </div>
+               )}
+            </div>
           </div>
           <button onClick={handleSOS} className="group relative w-32 h-32 md:w-48 md:h-48 rounded-full bg-rose-600 flex items-center justify-center shadow-[0_0_50px_rgba(225,29,72,0.4)] hover:scale-110 active:scale-95 transition-all duration-300 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-rose-700 to-rose-400"></div>

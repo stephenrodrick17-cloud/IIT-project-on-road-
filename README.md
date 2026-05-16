@@ -119,6 +119,23 @@ npm start
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
 
+## ☁️ Vercel Deployment
+
+This project is configured for easy deployment on Vercel.
+
+### Prerequisites
+- A Vercel account
+- GitHub repository connected to Vercel
+
+### Deployment Steps
+1.  **Push to GitHub**: Ensure your code is pushed to your GitHub repository.
+2.  **Import to Vercel**: Go to the Vercel dashboard and click "New Project", then import your repository.
+3.  **Configure Build Settings**:
+    - **Framework Preset**: Other (Vercel will automatically detect `vercel.json`).
+    - **Root Directory**: `./` (Root of the repository).
+4.  **Environment Variables**: Add all necessary variables from `.env.example` to the Vercel project settings.
+5.  **Deploy**: Click "Deploy". Vercel will handle the frontend build and backend serverless function setup.
+
 ## 🔧 Configuration
 
 ### Environment Variables
