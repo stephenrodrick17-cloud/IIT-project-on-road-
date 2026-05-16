@@ -20,10 +20,15 @@ tests/
 docs/
 *.jpg
 *.png
+!frontend/src/assets/*.jpg
+!frontend/src/assets/*.png
 *.sh
 *.ps1
 *.js
 !frontend/src/**/*.js
+!frontend/src/**/*.jsx
+!frontend/src/**/*.css
+!frontend/src/**/*.svg
 !BROWSER_CONSOLE_TEST.js
 prepare_log.txt
 train_log.txt
