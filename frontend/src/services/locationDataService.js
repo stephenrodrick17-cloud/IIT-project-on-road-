@@ -235,8 +235,10 @@ function getDefaultEmergencyResponse() {
   };
 }
 
-export default {
+const locationDataService = {
   getLocationData,
   getRoadAnalysis,
   getEmergencyResponse,
 };
+
+export default locationDataService;

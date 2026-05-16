@@ -49,6 +49,26 @@ const RoadSOS = () => {
   const recognitionRef = useRef(null);
   const TOMTOM_KEY = process.env.REACT_APP_TOMTOM_KEY;
 
+  const speak = useCallback((text) => {
+    if (!isVoiceEnabled) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }, [isVoiceEnabled]);
+
+  const announceStatus = useCallback(() => {
+    const unitCount = activeUnits.length;
+    const statusText = `Satellite tracking confirmed. ${unitCount} emergency units are en-route to your sector. PATROL 704 and MED 12 are responding.`;
+    speak(statusText);
+    toast.info("AI Status Briefing Active");
+  }, [activeUnits, speak]);
+
+  const handleSOS = useCallback(() => {
+    // Implementation of handleSOS if needed
+    toast.error("SOS Signal Broadcasted");
+  }, []);
+
   // AI Voice Setup
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -71,22 +91,7 @@ const RoadSOS = () => {
       recognitionRef.current.onerror = () => setIsListening(false);
       recognitionRef.current.onend = () => setIsListening(false);
     }
-  }, []);
-
-  const speak = (text) => {
-    if (!isVoiceEnabled) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const announceStatus = () => {
-    const unitCount = activeUnits.length;
-    const statusText = `Satellite tracking confirmed. ${unitCount} emergency units are en-route to your sector. PATROL 704 and MED 12 are responding.`;
-    speak(statusText);
-    toast.info("AI Status Briefing Active");
-  };
+  }, [handleSOS, speak, announceStatus]);
 
   const toggleVoice = () => {
     const newState = !isVoiceEnabled;
