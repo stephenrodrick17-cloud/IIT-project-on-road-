@@ -1,4 +1,7 @@
-# Aggressive exclusion for Vercel
+# Exclude large binary/model files
+*.pt
+*.onnx
+*.weights
 backend/venv
 backend/uploads
 backend/model/trained_models
@@ -10,31 +13,15 @@ archive (4)
 frontend/node_modules
 .venv
 venv
-*.pt
-*.onnx
-*.weights
 dataset/
 notebooks/
 scripts/
 tests/
 docs/
-# Images
-*.jpg
-*.png
-!frontend/src/assets/*.jpg
-!frontend/src/assets/*.png
-!frontend/public/*.jpg
-!frontend/public/*.png
-!frontend/public/*.ico
-!frontend/public/*.svg
+
+# Exclude scripts and logs
 *.sh
 *.ps1
-*.js
-!frontend/src/**/*.js
-!frontend/src/**/*.jsx
-!frontend/src/**/*.css
-!frontend/src/**/*.svg
-!BROWSER_CONSOLE_TEST.js
 prepare_log.txt
 train_log.txt
 test_*.py
@@ -51,3 +38,4 @@ FINETUNING*
 ENHANCEMENT*
 DEPLOYMENT_COMPLETE.md
 quickstart*
+!BROWSER_CONSOLE_TEST.js
