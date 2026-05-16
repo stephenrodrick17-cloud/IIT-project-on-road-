@@ -1,8 +1,9 @@
-# Exclude large local data and models from Vercel bundle
+# Aggressive exclusion for Vercel
 backend/venv
 backend/uploads
 backend/model/trained_models
 model/trained_models
+archive*
 archive (2)
 archive (3)
 archive (4)
@@ -16,3 +17,27 @@ dataset/
 notebooks/
 scripts/
 tests/
+docs/
+*.jpg
+*.png
+*.sh
+*.ps1
+*.js
+!frontend/src/**/*.js
+!BROWSER_CONSOLE_TEST.js
+prepare_log.txt
+train_log.txt
+test_*.py
+run_backend.py
+install_pytorch_gpu.py
+setup_gpu.py
+streamlit_app.py
+requirements_streamlit.txt
+README*
+!README.md
+PROJECT_SUMMARY.md
+MODEL_TRAINING_COMPLETE.md
+FINETUNING*
+ENHANCEMENT*
+DEPLOYMENT_COMPLETE.md
+quickstart*
