@@ -98,7 +98,7 @@ const ReportsPage = () => {
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       {/* AI Assistant Context Overlay */}
-      {showAIExplanation && selectedReport && (
+      {selectedReport && showAIExplanation && (
         <AIChatWidget analysisContext={{
           type: 'historical_report',
           report_id: selectedReport.id,

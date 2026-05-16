@@ -76,16 +76,18 @@ const AIChatWidget = ({ analysisContext = null }) => {
 
   // Auto-open and explain when analysis completes
   useEffect(() => {
-    if (analysisContext && (analysisContext.detections || analysisContext.statistics)) {
+    if (analysisContext && (analysisContext.detections || analysisContext.statistics || analysisContext.type === 'historical_report')) {
       setMessages([]);
       setIsOpen(true);
       setHasNewMessage(false);
       let isMounted = true;
       
       const triggerExplanation = async () => {
-        const text = analysisContext.detections 
-          ? 'Conduct a technical engineering deep-dive into these structural anomalies. Specifically explain the Expenditure Analysis, Severity Mix, and Analysis Radar results.' 
-          : 'Analyze these infrastructure trends and provide a strategic briefing.';
+        const text = analysisContext.type === 'historical_report'
+          ? `Perform a technical forensic audit on Historical Incident #${analysisContext.report_id}. Analyze the structural failure of the detected ${analysisContext.detections[0].damage_type} and explain the recovery strategy.`
+          : analysisContext.detections 
+            ? 'Conduct a technical engineering deep-dive into these structural anomalies. Specifically explain the Expenditure Analysis, Severity Mix, and Analysis Radar results.' 
+            : 'Analyze these infrastructure trends and provide a strategic briefing.';
         
         const userMsg = { role: 'user', content: text, timestamp: new Date() };
         if (!isMounted) return;
