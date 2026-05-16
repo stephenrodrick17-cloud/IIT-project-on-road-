@@ -8,14 +8,14 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 import logging
 from typing import Dict, Any, List
-import psutil
 
-# Try to import GPUtil, fallback if not available
 try:
-    import GPUtil
-    GPU_AVAILABLE = True
+    import psutil
+    PSUTIL_AVAILABLE = True
 except ImportError:
-    GPU_AVAILABLE = False
+    PSUTIL_AVAILABLE = False
+
+GPU_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +60,23 @@ async def extended_health_check() -> Dict[str, Any]:
     """
     try:
         # System stats
-        cpu_percent = psutil.cpu_percent(interval=1)
-        memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        cpu_percent = 0.0
+        memory_percent = 0.0
+        memory_available_mb = 0.0
+        disk_percent = 0.0
+        
+        if PSUTIL_AVAILABLE:
+            try:
+                cpu_percent = psutil.cpu_percent(interval=1)
+                memory = psutil.virtual_memory()
+                disk = psutil.disk_usage('/')
+                memory_percent = memory.percent
+                memory_available_mb = memory.available / (1024**2)
+                disk_percent = disk.percent
+            except Exception as e:
+                logger.error(f"Error getting psutil stats: {e}")
+        else:
+            logger.warning("psutil not available. Using mock system stats.")
         
         # GPU stats (if available)
         gpu_info = {}
@@ -90,9 +104,9 @@ async def extended_health_check() -> Dict[str, Any]:
             "version": "2.0.0",
             "system": {
                 "cpu_percent": cpu_percent,
-                "memory_percent": memory.percent,
-                "memory_available_mb": memory.available / (1024**2),
-                "disk_percent": disk.percent,
+                "memory_percent": memory_percent,
+                "memory_available_mb": memory_available_mb,
+                "disk_percent": disk_percent,
             },
             "gpu": gpu_info,
             "capabilities": {
