@@ -19,6 +19,12 @@ scripts/
 tests/
 docs/
 
+# Images (Explicitly Allow)
+!frontend/src/assets/*.png
+!frontend/src/assets/*.jpg
+!frontend/public/assets/*.png
+!frontend/public/assets/*.jpg
+
 # Exclude scripts and logs
 *.sh
 *.ps1

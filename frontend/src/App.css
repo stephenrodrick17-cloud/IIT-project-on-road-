@@ -29,7 +29,7 @@ body {
   font-feature-settings: "cv02", "cv05", "cv11", "ss01";
   background-image: 
     linear-gradient(to bottom, rgba(2, 6, 23, 0.75), rgba(2, 6, 23, 0.65)),
-    url('/assets/page_hero.png');
+    url('./assets/page_hero.png');
   background-attachment: fixed;
   background-size: cover;
   background-position: center;
