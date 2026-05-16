@@ -4,7 +4,12 @@ YOLOv8 Model Service for infrastructure damage detection
 
 import cv2
 import numpy as np
-from ultralytics import YOLO
+try:
+    from ultralytics import YOLO
+    HAS_ULTRALYTICS = True
+except ImportError:
+    HAS_ULTRALYTICS = False
+    
 import os
 from typing import List, Tuple, Dict, Any
 import logging
@@ -22,9 +27,6 @@ class DamageDetectionService:
         Args:
             model_path: Path to pre-trained YOLOv8 model
         """
-        if model_path is None:
-            from config.settings import MODEL_PATH
-            model_path = MODEL_PATH
         self.model_path = model_path
         self.model = None
         self.confidence_threshold = 0.5
@@ -32,7 +34,20 @@ class DamageDetectionService:
     
     def load_model(self):
         """Load YOLOv8 model"""
+        if not HAS_ULTRALYTICS:
+            logger.warning("Ultralytics not installed. Detection will run in Cloud Mock Mode (Vercel Optimized).")
+            self.model = None
+            return
+
         try:
+            if self.model_path is None:
+                # Local config might not be available on Vercel
+                try:
+                    from config.settings import MODEL_PATH
+                    self.model_path = MODEL_PATH
+                except ImportError:
+                    self.model_path = "model/trained_models/infrastructure_damage/weights/best.pt"
+
             logger.info(f"Loading model from {self.model_path}")
             if os.path.exists(self.model_path):
                 self.model = YOLO(self.model_path)
@@ -42,7 +57,6 @@ class DamageDetectionService:
                 self.model = None
         except Exception as e:
             logger.error(f"Error loading model: {str(e)}")
-            # Don't raise, just run in mock mode
             self.model = None
     
     def detect_damage(self, image_path: str, conf: float = 0.5) -> Dict[str, Any]:
