@@ -13,3 +13,7 @@ numpy
 Pillow
 httpx
 email-validator
+streamlit
+plotly
+streamlit-option-menu
+altair
