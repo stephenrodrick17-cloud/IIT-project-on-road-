@@ -2,18 +2,16 @@ import os
 import sys
 from pathlib import Path
 
-# Add the root directory to sys.path so backend and database modules can be found
+# Vercel Serverless Function entry point
+# Add the project root and backend directory to sys.path
 root_dir = Path(__file__).parent.parent
-sys.path.append(str(root_dir))
-sys.path.append(str(root_dir / "backend"))
+sys.path.insert(0, str(root_dir))
+sys.path.insert(0, str(root_dir / "backend"))
 
-# Import the FastAPI app from backend.main
-try:
-    from backend.main import app
-except ImportError as e:
-    print(f"Import error in api/index.py: {e}")
-    # Fallback or diagnostic info could go here
-    raise e
+# Important: The FastAPI instance MUST be defined at the top level for Vercel
+# Import the app from backend.main
+from backend.main import app
 
-# Vercel needs the app object to be named 'app' by default or configured in vercel.json
-# We've imported it as 'app'
+# Ensure Vercel can find the app object
+# Vercel looks for a variable named 'app' or 'application'
+# By importing 'from backend.main import app', we have 'app' at the top level
