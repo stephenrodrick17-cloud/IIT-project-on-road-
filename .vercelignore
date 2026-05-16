@@ -18,10 +18,15 @@ notebooks/
 scripts/
 tests/
 docs/
+# Images
 *.jpg
 *.png
 !frontend/src/assets/*.jpg
 !frontend/src/assets/*.png
+!frontend/public/*.jpg
+!frontend/public/*.png
+!frontend/public/*.ico
+!frontend/public/*.svg
 *.sh
 *.ps1
 *.js

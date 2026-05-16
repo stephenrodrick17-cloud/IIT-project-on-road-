@@ -2,7 +2,7 @@
 Detection Routes
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Request
 from fastapi.responses import FileResponse
 import os
 import logging
@@ -64,6 +64,7 @@ async def test_upload(
 
 @router.post("/detect")
 async def detect_damage(
+    request: Request,
     file: UploadFile = File(...),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
@@ -173,11 +174,15 @@ async def detect_damage(
         finally:
             db.close()
         
+        # Construct the base URL from the request
+        base_url = str(request.base_url).rstrip('/')
+        annotated_image_url = f"{base_url}/api/detection/image/{os.path.basename(detection_result['annotated_image_path'])}"
+        
         return {
             "success": True,
             "report_id": damage_report.id,
             "detections": processed_detections,
-            "annotated_image_url": f"http://localhost:8000/api/detection/image/{os.path.basename(detection_result['annotated_image_path'])}",
+            "annotated_image_url": annotated_image_url,
             "summary": {
                 "total_damage_areas": len(processed_detections),
                 "max_severity": max([d["severity"] for d in processed_detections], default="none"),

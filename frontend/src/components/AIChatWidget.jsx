@@ -3,7 +3,8 @@ import { Bot, X, Send, Sparkles, RotateCcw, Maximize2, Minimize2, MessageSquare,
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-toastify';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const defaultBaseURL = window.location.hostname === 'localhost' ? 'http://localhost:8000/api' : '/api';
+const BASE_URL = process.env.REACT_APP_API_URL || defaultBaseURL;
 
 const AIChatWidget = ({ analysisContext = null }) => {
   const [isOpen, setIsOpen] = useState(false);

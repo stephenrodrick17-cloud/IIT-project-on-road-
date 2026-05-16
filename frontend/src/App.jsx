@@ -26,7 +26,8 @@ function App() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const res = await fetch('http://localhost:8000/health');
+        const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+        const res = await fetch(`${baseUrl}/health`);
         if (res.ok) setApiHealth('online');
         else setApiHealth('offline');
       } catch (error) {
