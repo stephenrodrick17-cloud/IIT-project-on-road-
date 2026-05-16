@@ -11,8 +11,5 @@ python-multipart
 scikit-learn
 numpy
 Pillow
-folium
-streamlit-folium
-streamlit
 httpx
 email-validator
