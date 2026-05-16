@@ -25,8 +25,13 @@ router = APIRouter()
 detection_service = DamageDetectionService()
 
 # Create uploads directory
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+IS_VERCEL = os.getenv("VERCEL") == "1"
+UPLOAD_DIR = "/tmp/uploads" if IS_VERCEL else "uploads"
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+except Exception as e:
+    logger.warning(f"Could not create uploads directory: {e}")
+    UPLOAD_DIR = "/tmp"
 
 @router.post("/test-upload")
 async def test_upload(

@@ -35,8 +35,12 @@ from app.routes import detection, alerts, contractors, dashboard, datasets, moni
 # Ensure uploads directory exists
 # On Vercel, use /tmp for writable storage
 IS_VERCEL = os.getenv("VERCEL") == "1"
-UPLOAD_DIR = Path("/tmp/uploads") if IS_VERCEL else Path("uploads")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    UPLOAD_DIR = Path("/tmp/uploads") if IS_VERCEL else Path("uploads")
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    print(f"Warning: Could not create upload directory: {e}")
+    UPLOAD_DIR = Path("/tmp") # Fallback to /tmp which is always writable on Lambda
 
 # Create FastAPI app
 app = FastAPI(

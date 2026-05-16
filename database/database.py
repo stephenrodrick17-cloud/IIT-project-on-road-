@@ -10,7 +10,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./infrastructure_damage.db")
+IS_VERCEL = os.getenv("VERCEL") == "1"
+DEFAULT_DB = "/tmp/infrastructure_damage.db" if IS_VERCEL else "./infrastructure_damage.db"
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB}")
 
 # Create engine
 engine = create_engine(

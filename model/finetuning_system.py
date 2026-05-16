@@ -10,9 +10,23 @@ from pathlib import Path
 from datetime import datetime
 import logging
 from typing import Dict, List, Any
-import cv2
-import numpy as np
-from ultralytics import YOLO
+try:
+    import cv2
+    HAS_OPENCV = True
+except ImportError:
+    HAS_OPENCV = False
+
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+
+try:
+    from ultralytics import YOLO
+    HAS_ULTRALYTICS = True
+except ImportError:
+    HAS_ULTRALYTICS = False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,25 +34,35 @@ logger = logging.getLogger(__name__)
 class FeedbackManager:
     """Manages user feedback on model predictions"""
     
-    def __init__(self, feedback_dir="backend/uploads/feedback"):
+    def __init__(self, feedback_dir=None):
         """
         Initialize feedback manager
         
         Args:
             feedback_dir: Directory to store feedback
         """
-        self.feedback_dir = Path(feedback_dir)
-        self.feedback_dir.mkdir(parents=True, exist_ok=True)
-        
-        self.false_positives_dir = self.feedback_dir / "false_positives"
-        self.false_negatives_dir = self.feedback_dir / "false_negatives"
-        self.corrected_detections_dir = self.feedback_dir / "corrections"
-        
-        for d in [self.false_positives_dir, self.false_negatives_dir, self.corrected_detections_dir]:
-            d.mkdir(parents=True, exist_ok=True)
-        
-        self.feedback_log = self.feedback_dir / "feedback_log.json"
-        self.load_feedback_log()
+        if feedback_dir is None:
+            # On Vercel, use /tmp for writable storage
+            IS_VERCEL = os.getenv("VERCEL") == "1"
+            feedback_dir = "/tmp/feedback" if IS_VERCEL else "backend/uploads/feedback"
+            
+        try:
+            self.feedback_dir = Path(feedback_dir)
+            self.feedback_dir.mkdir(parents=True, exist_ok=True)
+            
+            self.false_positives_dir = self.feedback_dir / "false_positives"
+            self.false_negatives_dir = self.feedback_dir / "false_negatives"
+            self.corrected_detections_dir = self.feedback_dir / "corrections"
+            
+            for d in [self.false_positives_dir, self.false_negatives_dir, self.corrected_detections_dir]:
+                d.mkdir(parents=True, exist_ok=True)
+            
+            self.feedback_log = self.feedback_dir / "feedback_log.json"
+            self.load_feedback_log()
+        except Exception as e:
+            logger.warning(f"Could not initialize feedback directory: {e}. Feedback will be disabled.")
+            self.feedback_data = {"false_positives": [], "false_negatives": [], "corrections": [], "total_feedback": 0}
+            self.feedback_log = None
     
     def load_feedback_log(self):
         """Load existing feedback log"""
