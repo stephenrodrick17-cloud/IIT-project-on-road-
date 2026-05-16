@@ -1,6 +1,17 @@
 {
   "version": 2,
   "public": true,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -16,7 +27,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/frontend/build/$1"
+      "destination": "/frontend/$1"
     }
   ]
 }
